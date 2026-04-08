@@ -1,0 +1,25 @@
+- name: Fix Docker installation
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Stop docker service if running
+      systemd:
+        name: docker
+        state: stopped
+      ignore_errors: yes
+
+    - name: Remove conflicting docker packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - containerd
+          - runc
+        state: absent
+        purge: yes
+
+    - name: Clean apt cache
+      apt:
+        autoclean: yes
+        autoremove: yes

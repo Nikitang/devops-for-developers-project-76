@@ -1,0 +1,37 @@
+- name: Setup Nginx Load Balancer
+  hosts: app-server-1
+  become: yes
+
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Configure upstream
+      copy:
+        dest: /etc/nginx/conf.d/upstream.conf
+        content: |
+          upstream app_backend {
+            server 95.174.92.129:8080;
+            server 176.109.100.190:8080;
+          }
+      notify: Reload Nginx
+
+    - name: Configure proxy
+      copy:
+        dest: /etc/nginx/sites-available/default
+        content: |
+          server {
+            listen 80;
+            location / {
+              proxy_pass http://app_backend;
+            }
+          }
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      systemd:
+        name: nginx
+        state: reloaded

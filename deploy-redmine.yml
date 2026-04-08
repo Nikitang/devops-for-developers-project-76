@@ -1,0 +1,46 @@
+- name: Deploy Redmine Application with PostgreSQL
+  hosts: webservers
+  become: yes
+  tags: deploy
+
+  vars_files:
+    - group_vars/webservers/vars.yml
+    - group_vars/webservers/vault.yml
+
+  tasks:
+    - name: Create Redmine directory
+      file:
+        path: /opt/redmine
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Generate .env file from template
+      template:
+        src: templates/redmine.env.j2
+        dest: /opt/redmine/.env
+        owner: "{{ ansible_user }}"
+        mode: "0600"
+
+    - name: Pull Redmine image
+      docker_image:
+        name: "{{ redmine_image }}"
+        source: pull
+
+    - name: Stop old Redmine container if exists
+      docker_container:
+        name: "{{ redmine_container_name }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Run Redmine container
+      docker_container:
+        name: "{{ redmine_container_name }}"
+        image: "{{ redmine_image }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "{{ redmine_port }}:3000"
+        env_file: /opt/redmine/.env
+        volumes:
+          - redmine_files:/usr/src/redmine/files

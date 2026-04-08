@@ -1,0 +1,26 @@
+- name: Deploy Application
+  hosts: app-server
+  become: yes
+
+  tasks:
+    - name: Create app directory
+      file:
+        path: /opt/myapp
+        state: directory
+        owner: ubuntu
+
+    - name: Pull Docker image
+      docker_image:
+        name: nikitang1/devops-for-developers-project-76:latest
+        source: pull
+
+    - name: Run application container
+      docker_container:
+        name: myapp
+        image: nikitang1/devops-for-developers-project-76:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "8080:8080"
+        env:
+          NODE_ENV: production

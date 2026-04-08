@@ -1,0 +1,56 @@
+- name: Deploy Netdata Monitoring Agent
+  hosts: webservers
+  become: yes
+  tags: monitoring
+
+  tasks:
+    - name: Install Netdata monitoring agent
+      shell: |
+        # Скачиваем установочный скрипт Netdata
+        wget -O /tmp/netdata-kickstart.sh https://get.netdata.cloud/kickstart.sh
+
+        # Запускаем установку в стабильном режиме
+        # --stable-channel: стабильная версия (не beta)
+        # --no-updates: не обновлять автоматически
+        sh /tmp/netdata-kickstart.sh --stable-channel --no-updates
+
+        # Создаём метку, что Netdata установлен (чтобы не ставить повторно)
+        touch /etc/netdata/.installed
+      args:
+        creates: /etc/netdata/.installed
+
+    - name: Configure HTTP health check for Redmine
+      copy:
+        dest: /etc/netdata/go.d/httpcheck.conf
+
+        content: |
+          # Конфигурация HTTP проверок Netdata
+          jobs:
+            - name: redmine_health           # Имя проверки
+              url: http://localhost:3000     # Что проверяем (Redmine)
+              timeout: 10                    # Ждём ответа 10 секунд
+              status_accepted:               # Какие коды ответа считаем OK
+                - 200                        # OK
+                - 301                        # Redirect
+                - 302                        # Redirect
+              labels:                        # Метки для удобства
+                service: redmine
+                env: production
+
+        owner: root
+        group: root
+        mode: "0644"
+
+      notify: Restart Netdata
+
+    - name: Ensure Netdata service is running
+      systemd:
+        name: netdata
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Restart Netdata
+      systemd:
+        name: netdata
+        state: restarted

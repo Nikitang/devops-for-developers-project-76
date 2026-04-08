@@ -1,0 +1,18 @@
+# pip_install_packages:
+#   - name: docker
+#     state: present
+
+# docker_users:
+#   - user1
+
+# app_image: nikitang1/devops-for-developers-project-76:latest
+# app_container_name: myapp
+# app_port: 8080
+redmine_port: 3000
+redmine_image: redmine:5.1
+redmine_container_name: redmine
+
+redmine_db_host: ""
+redmine_db_name: ""
+redmine_db_user: ""
+redmine_db_password: ""
